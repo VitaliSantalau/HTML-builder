@@ -3,7 +3,7 @@ const path = require('path');
 const process = require('process');
 const readline = require('readline');
 
-const { stdin: input, stdout: output } = require('process');
+const { stdin: input, stdout: output } = process;
 
 const rl = readline.createInterface({ input, output });
 
