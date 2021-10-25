@@ -12,11 +12,11 @@ async function getOutput(way) {
       getOutput(`${way}/${file.name}`, {withFileTypes: true});
     }
     if(file.isFile()) {
-      const name = file.name.split('.')[0];
+      const name = path.basename(file.name, path.extname(file.name));
       const ext = path.extname(file.name).split('.')[1];
       stat(`${way}/${file.name}`, (err, stats) => {
         if(name && ext) {
-          console.log(`${name} - ${ext} - ${(+stats.size/1000).toFixed(1)}kb`);
+          console.log(`${name}-${ext}-${(+stats.size/1000).toFixed(1)}kb`);
         }
       });
     }
