@@ -1,5 +1,5 @@
-const readdir = require('fs').promises.readdir;
-const stat = require('fs').stat;
+const { readdir } = require('fs/promises');
+const { stat } = require('fs');
 const path = require('path');
 
 const absolutPath = path.join(__dirname, 'secret-folder');

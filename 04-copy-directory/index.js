@@ -1,33 +1,28 @@
-const fs = require('fs');
-const mkdir = require('fs').promises.mkdir;
-const readdir = require('fs').promises.readdir;
-const copyFile = require('fs').promises.copyFile;
+const { unlink } = require('fs');
+const { mkdir, readdir, copyFile }= require('fs/promises');
 const path = require('path');
 
-const pathSrc = path.join(__dirname, 'files');
-const pathDest = path.join(__dirname, 'files-copy');
+const src = path.join(__dirname, 'files');
+const dest = path.join(__dirname, 'files-copy');
+  
+mkdir(dest, { recursive : true });
+clean();
+copy();
 
-
-
-mkdir(pathDest, {recursive : true});
-//read 04---- if files-copy to deleteFilesDest();
-/// TODO refactor !!!!!!!!!!!!!!!!!!11
-deleteFilesDest();
-getFiles();
-
-async function deleteFilesDest() {
-  const files = await readdir(pathDest);
-  for(const file of files) {
-    fs.unlink(`${pathDest}/${file}`, (err) => {
-      if(err) throw err;
-    });
+async function clean() {
+  const files = await readdir(dest);
+  if(files.length) {
+    for(const file of files) {
+      unlink(`${dest}/${file}`, (er) => {
+        if(er) throw er;
+      });
+    }  
   }
 }
 
-async function getFiles() {
-  const files = await readdir(pathSrc);
+async function copy() {
+  const files = await readdir(src);
   for(const file of files) {
-    await copyFile(`${pathSrc}/${file}`, `${pathDest}/${file}`);
+    await copyFile(`${src}/${file}`, `${dest}/${file}`);
   }
 }
-

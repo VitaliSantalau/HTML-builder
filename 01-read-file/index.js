@@ -1,14 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const stdout = require('process').stdout;
+const { stdout } = require('process');
 
-const absolutPath = path.join(__dirname, 'text.txt');
-const readStream = fs.createReadStream(absolutPath, 'utf8');
-
-readStream.pipe(stdout); // or take a look below 
-
-// *** OR *** 
-
-// readStream.on('data', function(chunk) {
-//   console.log(chunk);
-// });  
+fs
+  .createReadStream(path.join(__dirname, 'text.txt'), 'utf8')
+  .pipe(stdout);
