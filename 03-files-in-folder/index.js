@@ -9,7 +9,7 @@ async function getOutput(way) {
   
   for(const file of files) {
     if(file.isDirectory()) {
-      getOutput(`${way}/${file.name}`, {withFileTypes: true});
+      getOutput(`${way}/${file.name}`);
     }
     if(file.isFile()) {
       const name = path.basename(file.name, path.extname(file.name));
