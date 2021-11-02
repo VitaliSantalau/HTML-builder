@@ -2,7 +2,7 @@ const { readdir } = require('fs/promises');
 const { stat } = require('fs');
 const path = require('path');
 
-const absolutPath = path.join(__dirname, 'secret-folder');
+const pathToFolder = path.join(__dirname, 'secret-folder');
 
 async function getOutput(way) {
   const files = await readdir(way, {withFileTypes: true});
@@ -13,14 +13,14 @@ async function getOutput(way) {
     }
     if(file.isFile()) {
       const name = path.basename(file.name, path.extname(file.name));
-      const ext = path.extname(file.name).split('.')[1];
+      const ext = path.extname(file.name).slice(1);
       stat(`${way}/${file.name}`, (err, stats) => {
         if(name && ext) {
-          console.log(`${name}-${ext}-${(+stats.size/1000).toFixed(1)}kb`);
+          console.log(`${name} - ${ext} - ${(+stats.size/1000)}kb`);
         }
       });
     }
   }
 }
 
-getOutput(absolutPath);
+getOutput(pathToFolder);
