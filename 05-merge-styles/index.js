@@ -1,33 +1,24 @@
 const fs = require('fs');
 const path = require('path');
 const { readdir } = require('fs/promises');
-const readline = require('readline');
 
 const src = path.join(__dirname, 'styles');
 const dist = path.join(__dirname, 'project-dist/bundle.css');
-
-// const src = path.join(__dirname, 'test-files/styles');
-// const dist = path.join(__dirname, 'test-files/bundle.css');
 
 const writeStream = fs.createWriteStream(dist, 'utf8');
 
 (async () => {
   const files = await getNameFiles();
-  const arrData = await Promise.all(files.map(file => getData(file)));
+  const arrData = await Promise.all(files.map(file => {
+    const pathFile = path.join(__dirname, `styles/${file}`);
+    const readStreamFile = fs.createReadStream(pathFile, 'utf8');
+    return getData(readStreamFile);
+  }));
   
-  arrData
-    .reduce((acc, el) => {
-      acc.push(...el);
-      return acc;
-    }, [])
-    .forEach(el => {
-      try {
-        writeStream.write(el);
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
+  arrData.forEach(el => {
+    writeStream.on('error', (err) => console.log(`Err: ${err}`));
+    writeStream.write(el, 'utf8');
+  });
 })();
 
 async function getNameFiles() {
@@ -41,17 +32,11 @@ async function getNameFiles() {
   return nameFiles; 
 }
 
-async function getData(file) {
-  const pathFile = path.join(__dirname, `styles/${file}`);
-  // const pathFile = path.join(__dirname, `test-files/styles/${file}`);
-  const input =  fs.createReadStream(pathFile, 'utf8');
-
-  const res = await new Promise((resolve, reject) => {
-    const string = [];
-    const rl = readline.createInterface({ input });
-    rl.on('line', (line) => string.push(line));
-    rl.on('close', () => resolve(string));
-    rl.on('error', (err) => reject(err));  
+async function getData(stream) {
+  const res = [];
+  return new Promise((resolve, reject) => {
+    stream.on('data', data => res.push(data));
+    stream.on('error', (er) => reject(er));
+    stream.on('end', () => resolve(res.join('')));
   });
-  return res;
 }
