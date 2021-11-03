@@ -2,42 +2,67 @@ const fs = require('fs');
 const path = require('path');
 const { mkdir, readdir, copyFile } = require('fs/promises');
 
-const pathProjectDist = path.join(__dirname, 'project-dist');
 
-(async () => {
-  mkdir(pathProjectDist, { recursive : true });
+const dist = path.join(__dirname, 'project-dist');
 
-  const pathTemplate = path.join(__dirname, 'template.html');
-  const readStreamTemplate = fs.createReadStream(pathTemplate, 'utf8');
-  let template = await getData(readStreamTemplate);
+mkdir(dist, { recursive : true })
+  .then(() => clean(dist))
+  .then(() => {
+    createHTML();
+    createCSS();
+    copyDir();
+  })
+  .catch(err => console.log(err));
 
-  const placeholders = template.match(/\{\w+\}/g).map(el => el.slice(1, el.length-1));
-  
-  const objComponents = {};
-  for(let i = 0; i < placeholders.length; i++) {
-    const pathComponent = path.join(__dirname, `components/${placeholders[i]}.html`);
-    const readStreamComponent = fs.createReadStream(pathComponent, 'utf8');
-    const component = await getData(readStreamComponent);
-    objComponents[placeholders[i]] = component;  
-  }  
-  
+async function clean(way) {
+  const files = await readdir(way, {withFileTypes: true});
+  if(files.length) {
+    for(const file of files) {
+      if(file.isDirectory()) {
+        clean(`${way}/${file.name}`);
+      }
+      if(file.isFile()) {
+        fs.unlink(`${way}/${file.name}`, (err) => {
+          if(err) throw err;
+        });        
+      }
+    }
+  }
+}
+
+async function createHTML() {
+  let template = await getDataTemplate();
+  const placeholders = await template.match(/\{\w+\}/g).map(el => el.slice(1, el.length-1)); 
+  const objComponents = await getDataComponents(placeholders);
+
   placeholders.forEach(el => {
     template = template.replace(`{{${el}}}`, objComponents[el]);  
   });
   
-  writeDataToIndex(template); 
-  
-  mergeStyles();
+  writeDataToHTML(template); 
+}
 
-  cleanDir();
-  copyDir();
-})();
+async function getDataTemplate() {
+  const pathTemplate = path.join(__dirname, 'template.html');
+  const readStream = fs.createReadStream(pathTemplate, 'utf8');
+  return await getData(readStream);
+}
 
+async function getDataComponents(array) {
+  const res = {};
+  for(let i = 0; i < array.length; i++) {
+    const pathComponent = path.join(__dirname, `components/${array[i]}.html`);
+    const readStream = fs.createReadStream(pathComponent, 'utf8');
+    const component = await getData(readStream);
+    res[array[i]] = component;  
+  } 
+  return res;
+}
 
-function writeDataToIndex(template) {
-  const writeStreamIndex = fs.createWriteStream(`${pathProjectDist}/index.html`, 'utf8');
-  writeStreamIndex.on('error', (err) => console.log(`Err: ${err}`));
-  writeStreamIndex.write(template, 'utf8');
+function writeDataToHTML(template) {
+  const writeStream = fs.createWriteStream(`${dist}/index.html`, 'utf8');
+  writeStream.on('error', (err) => console.log(`Err: ${err}`));
+  writeStream.write(template, 'utf8');
 }
 
 function getData(stream) {
@@ -48,54 +73,52 @@ function getData(stream) {
     stream.on('end', () => resolve(res.join('')));
   });
 }
-
-async function mergeStyles() {
-  const writeStreamStyle = fs.createWriteStream(path.join(pathProjectDist, 'style.css'), 'utf8');
+  
+  
+async function createCSS() {
+  const writeStream = fs.createWriteStream(path.join(dist, 'style.css'), 'utf8');
   
   const files = await getNameFiles();
   
   const arrData = await Promise.all(files.map(file => {
     const pathFile = path.join(__dirname, `styles/${file}`);
-    const readStreamFile = fs.createReadStream(pathFile, 'utf8');
-    return getData(readStreamFile);
+    const readStream = fs.createReadStream(pathFile, 'utf8');
+    return getData(readStream);
   }));
 
   arrData.forEach(el => {
-    writeStreamStyle.on('error', (err) => console.log(`Err: ${err}`));
-    writeStreamStyle.write(el, 'utf8');
+    writeStream.on('error', (err) => console.log(`Err: ${err}`));
+    writeStream.write(el, 'utf8');
+    writeStream.write('\n');
   });
 }
 
 async function getNameFiles() {
-  const filesFromStyles = await readdir(path.join(__dirname, 'styles'), {withFileTypes: true});
+  const files = await readdir(path.join(__dirname, 'styles'), {withFileTypes: true});
   const nameFiles = [];
-  for(const file of filesFromStyles) {
-    if(file.isFile() && path.extname(file.name) === '.css') {
-      nameFiles.push(file.name);
+  if(files.length) {
+    for(const file of files) {
+      if(file.isFile() && path.extname(file.name) === '.css') {
+        nameFiles.push(file.name);
+      }
     }
   }
   return nameFiles; 
 }
 
-function cleanDir() {
-  fs.rmdir(path.join(pathProjectDist, 'assets'), {recursive : true}, (err) => {
-    if(err) throw err;
-  });
 
-  /// dir not empty ERRRRR
-}
-
-async function copyDir(dir = 'assets', pathDir = __dirname, pathCopyDir = pathProjectDist) {
+async function copyDir(dir = 'assets', pathSrcDir = __dirname, pathCopyDir = dist) {
   mkdir(path.join(pathCopyDir, `${dir}`), { recursive : true }); 
 
-  const files = await readdir(path.join(pathDir, dir), {withFileTypes: true});
-  
-  for(const file of files) {
-    if(file.isDirectory()) {
-      copyDir(file.name, path.join(pathDir, dir), path.join(pathCopyDir, dir));
-    }
-    if(file.isFile()) {
-      await copyFile(path.join(pathDir, dir, file.name), path.join(pathCopyDir, dir, file.name));
+  const files = await readdir(path.join(pathSrcDir, dir), {withFileTypes: true});
+  if(files.length) {
+    for(const file of files) {
+      if(file.isDirectory()) {
+        copyDir(file.name, path.join(pathSrcDir, dir), path.join(pathCopyDir, dir));
+      }
+      if(file.isFile()) {
+        await copyFile(path.join(pathSrcDir, dir, file.name), path.join(pathCopyDir, dir, file.name));
+      }
     }
   }
 }
