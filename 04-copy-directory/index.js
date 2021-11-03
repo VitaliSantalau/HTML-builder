@@ -5,9 +5,10 @@ const path = require('path');
 const src = path.join(__dirname, 'files');
 const dest = path.join(__dirname, 'files-copy');
   
-mkdir(dest, { recursive : true });
-clean();
-copy();
+mkdir(dest, { recursive : true })
+  .then(() => clean())
+  .then(() => copy())
+  .catch(err => console.log(err))
 
 async function clean() {
   const files = await readdir(dest);
