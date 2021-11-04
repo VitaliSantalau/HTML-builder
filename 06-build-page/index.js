@@ -1,36 +1,101 @@
 const fs = require('fs');
 const path = require('path');
-const { mkdir, readdir, copyFile } = require('fs/promises');
+const { mkdir, rmdir, readdir, copyFile, rm } = require('fs/promises');
 
 
 const dist = path.join(__dirname, 'project-dist');
+const pathDistAssets = path.join(dist, 'assets');
 
-mkdir(dist, { recursive : true })
-  .then(() => clean(dist))
-  .then(() => {
-    createHTML();
-    createCSS();
-    copyDir();
-  })
-  .catch(err => console.log(err));
+(async () => {
+  mkdir(dist, { recursive : true })
+    .then(async (res) => {
+      res = await mkdir(pathDistAssets, { recursive : true })
+      return res;
+  }).then(async (res) => {
+    const files = await readdir(pathDistAssets, {withFileTypes: true});
+    res = await Promise.all(files.map(file => {
+      rm(`${pathDistAssets}/${file.name}`, {recursive: true}, (err) => {
+        if(err) throw err;
+      })
+    }))
+    return res;
+  }).then((res) => console.log(res))
+})()
 
-async function clean(way) {
-  const files = await readdir(way, {withFileTypes: true});
-  if(files.length) {
-    for(const file of files) {
-      if(file.isDirectory()) {
-        clean(`${way}/${file.name}`);
-      }
-      if(file.isFile()) {
-        fs.unlink(`${way}/${file.name}`, (err) => {
-          if(err) throw err;
-        });        
-      }
-    }
-  }
-}
+
+
+// new Promise(resolve => {
+//   resolve(mkdir(dist, { recursive : true }))
+// }).then(() => {
+//     return new Promise(resolve => {
+//       resolve(mkdir(pathDistAssets, { recursive : true }))
+//     })
+//   })
+//   .then(() => {
+//     const res = new Promise(async (resolve) => {
+//       console.log('start clean assets')
+//       const files = await readdir(pathDistAssets, {withFileTypes: true});
+//       // const res = await Promise.all(files.map(file => {
+//       //   console.log(`claen ${file.name} `)
+//       //   rm(`${pathDistAssets}/${file.name}`, {recursive: true}, (err) => {
+//       //     if(err) throw err;
+//       //     console.log(`delete:${file.name}`)
+//       //   })
+//       // }))
+//       // resolve(res);
+
+//     })
+//     return res;
+//   })
+//   .then(() => console.log('after clean'))
+//   .then(() => {
+//     console.log('start creating')
+//     return new Promise(() => {
+//       createHTML();
+//       createCSS();
+//       copyDir();
+//     }
+//     )
+   
+//   })
+//   .catch(err => console.log(err));
+
+  
+
+// async function cleanAssets() {
+//   const files = await readdir(pathDistAssets, {withFileTypes: true});
+//   for(const file of files) {
+//     console.log('file')
+//     rm(pathDistAssets, {recursive: true, force: true}, () => console.log(`done:${file.name}`))
+//   }
+// }
+
+// async function cleanDir(way) {
+//   const files = await readdir(way, {withFileTypes: true});
+//   for(const file of files) {
+//     if(file.isDirectory()) {
+//       cleanDir(`${way}/${file.name}`);
+//     }
+//     if(file.isFile()) {
+//       console.log('file')
+//       fs.unlink(`${way}/${file.name}`, (err) => {
+//         if(err) throw err;
+//       });        
+//     }
+//   }
+// }
+
+// async function delDir(way) {
+//   const files = await readdir(way, {withFileTypes: true});
+//   for(const file of files) {
+//     rmdir(way, {}, err => {
+//       if(err) throw err;
+//     })
+//   }
+// }
 
 async function createHTML() {
+  console.log('start HTML')
   let template = await getDataTemplate();
   const placeholders = await template.match(/\{\w+\}/g).map(el => el.slice(1, el.length-1)); 
   const objComponents = await getDataComponents(placeholders);
@@ -76,6 +141,7 @@ function getData(stream) {
   
   
 async function createCSS() {
+  console.log('start CSS')
   const writeStream = fs.createWriteStream(path.join(dist, 'style.css'), 'utf8');
   
   const files = await getNameFiles();
@@ -108,6 +174,8 @@ async function getNameFiles() {
 
 
 async function copyDir(dir = 'assets', pathSrcDir = __dirname, pathCopyDir = dist) {
+  console.log('start copy')
+
   mkdir(path.join(pathCopyDir, `${dir}`), { recursive : true }); 
 
   const files = await readdir(path.join(pathSrcDir, dir), {withFileTypes: true});
@@ -117,6 +185,7 @@ async function copyDir(dir = 'assets', pathSrcDir = __dirname, pathCopyDir = dis
         copyDir(file.name, path.join(pathSrcDir, dir), path.join(pathCopyDir, dir));
       }
       if(file.isFile()) {
+        console.log('copy')
         await copyFile(path.join(pathSrcDir, dir, file.name), path.join(pathCopyDir, dir, file.name));
       }
     }
