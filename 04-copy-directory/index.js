@@ -6,7 +6,7 @@ const src = path.join(__dirname, 'files');
 const dest = path.join(__dirname, 'files-copy');
   
 mkdir(dest, { recursive : true })
-  .then(() => clean())
+  .then(async () => await clean())
   .then(() => copy())
   .catch(err => console.log(err));
 
