@@ -40,3 +40,6 @@ async function getData(stream) {
     stream.on('end', () => resolve(res.join('')));
   });
 }
+
+// everything works
+// if something goes wrong, please contact me (discord vitali-santalau#3627)

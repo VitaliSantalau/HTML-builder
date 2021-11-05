@@ -27,3 +27,6 @@ async function copy() {
     await copyFile(`${src}/${file}`, `${dest}/${file}`);
   }
 }
+
+// everything works
+// if something goes wrong, please contact me (discord vitali-santalau#3627)

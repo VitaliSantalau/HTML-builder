@@ -5,7 +5,10 @@ const { mkdir, readdir, copyFile, rm } = require('fs/promises');
 const dist = path.join(__dirname, 'project-dist');
 const dist_Assets = path.join(dist, 'assets');
 
-mkdir(dist_Assets, { recursive : true })
+mkdir(dist, { recursive : true })
+  .then(() => {
+    mkdir(dist_Assets, { recursive : true })
+  })
   .then(async () => {
     createHTML();
     createCSS();
@@ -113,3 +116,6 @@ async function copyDir(dir = 'assets', pathSrcDir = __dirname, pathCopyDir = dis
     }
   }
 }
+
+// everything works
+// if something goes wrong, please contact me (discord vitali-santalau#3627)
